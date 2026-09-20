@@ -22,7 +22,7 @@ docker compose up --build -d
 docker compose ps
 ```
 
-The boilerplate defaults bind the site to `127.0.0.1:8083` and MySQL to `127.0.0.1:3308`. The host-side `.env` uses port 3308; containers connect to `db:3306`. If you change `BOILERPLATE_PORT` or `BOILERPLATE_DB_PORT`, keep `APP_URL` and host-side `DB_PORT` in `.env` aligned. Docker generates and persists its own application key and runs migrations on startup.
+The boilerplate defaults bind the site to `127.0.0.1:80` (open `http://localhost`) and MySQL to `127.0.0.1:3308`. The host-side `.env` uses port 3308; containers connect to `db:3306`. Only one project can use localhost port 80 at a time. If you change `BOILERPLATE_PORT` or `BOILERPLATE_DB_PORT`, keep `APP_URL` and host-side `DB_PORT` in `.env` aligned. Docker generates and persists its own application key and runs migrations on startup.
 
 Use `docker compose down` to stop the project without deleting data. `docker compose down --volumes` permanently deletes its database, application key, and uploaded files.
 

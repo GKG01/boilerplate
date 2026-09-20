@@ -1,0 +1,78 @@
+name: boilerplate
+services:
+    app:
+        build: .
+        container_name: ${DOCKER_APP_CONTAINER_NAME:-boilerplate-app}
+        environment:
+            APP_NAME: Boilerplate
+            APP_ENV: production
+            APP_DEBUG: 'false'
+            APP_URL: http://localhost:${BOILERPLATE_PORT:-8083}
+            INERTIA_SSR_ENABLED: 'false'
+            DB_CONNECTION: mysql
+            DB_HOST: db
+            DB_PORT: '3306'
+            DB_DATABASE: boilerplate
+            DB_USERNAME: boilerplate
+            DB_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
+            SESSION_DRIVER: database
+            CACHE_STORE: database
+            QUEUE_CONNECTION: sync
+            LOG_CHANNEL: stderr
+            MAIL_MAILER: log
+        volumes:
+            - boilerplate-data:/data
+            - boilerplate-storage:/var/www/html/storage
+            - boilerplate-public:/shared/public
+        depends_on:
+            db:
+                condition: service_healthy
+        healthcheck:
+            test: ['CMD', 'php-fpm', '-t']
+            interval: 10s
+            timeout: 5s
+            start_period: 30s
+            retries: 5
+        restart: unless-stopped
+    db:
+        image: container-registry.oracle.com/mysql/community-server:8.4.12
+        container_name: ${DOCKER_DATABASE_CONTAINER_NAME:-boilerplate-db}
+        environment:
+            MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
+            MYSQL_DATABASE: boilerplate
+            MYSQL_USER: boilerplate
+            MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
+        volumes:
+            - boilerplate-mysql:/var/lib/mysql
+        ports:
+            - '127.0.0.1:${BOILERPLATE_DB_PORT:-3308}:3306'
+        healthcheck:
+            test: ['CMD-SHELL', 'MYSQL_PWD="$$MYSQL_ROOT_PASSWORD" mysqladmin ping -h localhost -u root --silent']
+            interval: 5s
+            timeout: 5s
+            retries: 20
+        restart: unless-stopped
+    webserver:
+        build:
+            context: .
+            dockerfile: docker/nginx/Dockerfile
+        container_name: ${DOCKER_WEBSERVER_CONTAINER_NAME:-boilerplate-webserver}
+        ports:
+            - '127.0.0.1:${BOILERPLATE_PORT:-8083}:80'
+        volumes:
+            - boilerplate-public:/var/www/html/public:ro
+        depends_on:
+            app:
+                condition: service_healthy
+        healthcheck:
+            test: ['CMD', 'curl', '--fail', '--silent', 'http://localhost/up']
+            interval: 10s
+            timeout: 5s
+            start_period: 10s
+            retries: 5
+        restart: unless-stopped
+volumes:
+    boilerplate-data:
+    boilerplate-storage:
+    boilerplate-public:
+    boilerplate-mysql:
